@@ -1,0 +1,101 @@
+'''
+HW 7: 7:12: 
+Calculate the entropy for the cream-in-your-coffee problem, and reproduce the results in fig 7.16
+'''
+
+import numpy as np
+from numpy.random import randint,random,uniform
+import matplotlib.pyplot as plt
+
+class diff_plot:
+    def __init__(self,n,t_tot,xmax=100,ymax=100):
+        ## nums
+        self.n=n## total particles(400)
+        self.N=np.arange(0,self.n,1)
+        self.tf=t_tot## 10^6
+        self.xm=xmax
+        self.ym=ymax
+        self.t=0
+    
+    def setInitialConds(self,nbins):
+        self.walkers=[[uniform(-0.5,0.5),uniform(-0.5,0.5)] for i in self.N]
+        self.nbins=nbins
+        self.bins=np.zeros([nbins+1,nbins+1])
+        print(self.bins)
+        self.dx=(2*self.xm)/nbins
+        self.EntvsTime=[]
+        # print(self.walkers)
+
+    def calc_entropy(self):
+        #calc it
+        entropy=0## this should make entropy reset.
+        total=float(np.sum(self.bins))
+        for k in self.bins:
+            for j in k:
+                if j!=0:
+                    entropy-=j/total * np.log(j/total)
+        return entropy
+
+    def rand_walks(self):
+        ## for each time step, choose a particle at random
+        self.ttot=[]
+        while self.t<self.tf:
+            part=randint(1,self.n)
+            a=random()
+            if a < 0.25:
+                if self.walkers[part][0]>-self.xm:
+                    self.walkers[part][0]-=1## go left
+                else:    
+                    self.walkers[part][0]-=0## don't move
+            elif a < 0.5 and a >=0.25:
+                if self.walkers[part][0]<self.xm:
+                    self.walkers[part][0]+=1## go right
+                else:    
+                    self.walkers[part][0]+=0## don't move
+                
+            elif a < 0.75 and a >= 0.5:
+                if self.walkers[part][1]<self.ym:
+                    self.walkers[part][1]+=1## go up
+                else:
+                    self.walkers[part][1]+=0
+            else:
+                if self.walkers[part][1]>-self.ym:
+                    self.walkers[part][1]-=1## go down
+                else:
+                    self.walkers[part][1]-=0
+            
+            if self.t%1000==0:
+                xcoords=[walker[0] for walker in self.walkers]
+                ycoords=[walker[1] for walker in self.walkers]
+
+                self.bins=np.zeros([self.nbins+1,self.nbins+1])
+                for i in range(len(self.walkers)):## counting number of particles in each bin
+                    xplace=int((xcoords[i]+self.xm)/self.dx)#maybe?         
+                    yplace=int((ycoords[i]+self.ym)/self.dx)
+                    self.bins[xplace,yplace] += 1
+                #print(self.bins)## something is off.
+                ent=self.calc_entropy()
+                self.EntvsTime.append(ent)
+                self.ttot.append(self.t) 
+                plt.scatter(xcoords,ycoords,s=10)
+                plt.ylim(-self.ym,self.ym)
+                plt.xlim(-self.xm,self.xm)
+                plt.draw()
+                plt.pause(0.0001)
+                plt.clf()
+            self.t+=1## increase the timestep
+        print(self.bins)
+        #print(self.EntvsTime)
+
+    def plot_entropy(self):
+        plt.plot(self.ttot, self.EntvsTime)
+        plt.title("Entropy vs time")
+        plt.show()
+
+
+
+    
+cream=diff_plot(400,6e6)
+cream.setInitialConds(8)
+cream.rand_walks()
+cream.plot_entropy()
